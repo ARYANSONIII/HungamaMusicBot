@@ -2,49 +2,44 @@ import asyncio
 
 import speedtest
 from pyrogram import filters
-from config import OWNER_ID
-from strings import get_command
+from pyrogram.types import Message
+
 from BrandrdXMusic import app
-from BrandrdXMusic.misc import SUDOERS, SPECIAL_ID
-
-# Commands
-SPEEDTEST_COMMAND = get_command("SPEEDTEST_COMMAND")
+from BrandrdXMusic.misc import SUDOERS
+from BrandrdXMusic.utils.decorators.language import language
 
 
-def testspeed(m):
+def testspeed(m, _):
     try:
         test = speedtest.Speedtest()
         test.get_best_server()
-        m = m.edit("⇆ ʀᴜɴɴɪɴɢ ᴅᴏᴡɴʟᴏᴀᴅ sᴩᴇᴇᴅᴛᴇsᴛ...")
+        m = m.edit_text(_["server_12"])
         test.download()
-        m = m.edit("⇆ ʀᴜɴɴɪɴɢ ᴜᴘʟᴏᴀᴅ sᴘᴇᴇᴅᴛᴇsᴛ...")
+        m = m.edit_text(_["server_13"])
         test.upload()
         test.results.share()
         result = test.results.dict()
-        m = m.edit("↻ sʜᴀʀɪɴɢ sᴘᴇᴇᴅᴛᴇsᴛ ʀᴇsᴜʟᴛ")
+        m = m.edit_text(_["server_14"])
     except Exception as e:
-        return m.edit(e)
+        return m.edit_text(f"<code>{e}</code>")
     return result
 
 
-@app.on_message(filters.command(SPEEDTEST_COMMAND) & SUDOERS)
-async def speedtest_function(client, message):
-    m = await message.reply_text("ʀᴜɴɴɪɴɢ sᴘᴇᴇᴅᴛᴇsᴛ")
-    loop = asyncio.get_event_loop_policy().get_event_loop()
-    result = await loop.run_in_executor(None, testspeed, m)
-    output = f"""**sᴘᴇᴇᴅᴛᴇsᴛ ʀᴇsᴜʟᴛ**
-    
-<u>**ᴄʟɪᴇɴᴛ:**</u>
-**ɪsᴘ :** {result['client']['isp']}
-**ᴄᴏᴜɴᴛʀʏ :** {result['client']['country']}
-  
-<u>**sᴇʀᴠᴇʀ :**</u>
-**ɴᴀᴍᴇ :** {result['server']['name']}
-**ᴄᴏᴜɴᴛʀʏ :** {result['server']['country']}, {result['server']['cc']}
-**sᴘᴏɴsᴏʀ :** {result['server']['sponsor']}
-**ʟᴀᴛᴇɴᴄʏ :** {result['server']['latency']}  
-**ᴘɪɴɢ :** {result['ping']}"""
-    msg = await app.send_photo(
-        chat_id=message.chat.id, photo=result["share"], caption=output
+@app.on_message(filters.command(["speedtest", "spt"]) & SUDOERS)
+@language
+async def speedtest_function(client, message: Message, _):
+    m = await message.reply_text(_["server_11"])
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, testspeed, m, _)
+    output = _["server_15"].format(
+        result["client"]["isp"],
+        result["client"]["country"],
+        result["server"]["name"],
+        result["server"]["country"],
+        result["server"]["cc"],
+        result["server"]["sponsor"],
+        result["server"]["latency"],
+        result["ping"],
     )
+    msg = await message.reply_photo(photo=result["share"], caption=output)
     await m.delete()
